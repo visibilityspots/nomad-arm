@@ -1,0 +1,129 @@
+name: build
+
+on:
+  push:
+    tags:
+      - '*'
+
+env:
+  PKG_NAME: "nomad"
+  GO_TAGS: "release"
+
+jobs:
+
+  get-versions:
+    runs-on: ubuntu-latest
+    outputs:
+      go-version: ${{ steps.get-go-version.outputs.go-version }}
+      nomad-version: ${{ steps.get-nomad-version.outputs.nomad-version }}
+    steps:
+      - uses: robinraju/release-downloader@v1.11
+        with:
+          repository: 'hashicorp/nomad'
+          tag: 'v1.8.3'
+          tarBall: true
+          extract: true
+      - name: Determine Go version
+        id: get-go-version
+        # We use .go-version as our source of truth for current Go
+        # version, because "goenv" can react to it automatically.
+        run: |-
+          cd hashicorp*
+          echo "Building with Go $(cat .go-version)"
+          echo "go-version=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+      - name: Setup go
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: ${{ steps.get-go-version.outputs.go-version }}
+      - name: get nomad version
+        id: get-nomad-version
+        run: |-
+          cd hashicorp*
+          make version
+          echo "nomad-version=$(make version)" >> "$GITHUB_OUTPUT"
+
+  build-linux:
+    needs: get-versions
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        goos: [linux]
+        goarch: ["arm"]
+      fail-fast: true
+
+    name: Go ${{ needs.get-versions.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+
+    steps:
+      - uses: robinraju/release-downloader@v1.11
+        with:
+          repository: 'hashicorp/nomad'
+          tag: 'v1.8.3'
+          tarBall: true
+          extract: true
+
+      - name: Setup go
+        uses: actions/setup-go@v5.0.2
+        with:
+          go-version: ${{ needs.get-versions.outputs.go-version }}
+
+      - name: Build dependencies
+        run: |-
+          cd hashicorp*
+          make deps
+
+      - name: Setup node and yarn
+        uses: actions/setup-node@v4.0.3
+        with:
+          node-version: "18"
+          cache-dependency-path: "hashicorp*/ui/yarn.lock"
+
+      - name: Install Yarn
+        run: |
+          npm install -g yarn
+
+      - name: Install Linux build utilties
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y software-properties-common
+          sudo apt-get update
+          sudo apt-get install -y \
+            binutils-aarch64-linux-gnu \
+            binutils-arm-linux-gnueabihf \
+            gcc-aarch64-linux-gnu \
+            gcc-arm-linux-gnueabihf
+
+      - name: Set gcc
+        run: |
+          if [ "${{ matrix.goarch }}" == "arm" ]; then
+            echo "CC=arm-linux-gnueabihf-gcc" >> "$GITHUB_ENV"
+          fi
+
+      - name: Build
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          GO_TAGS: ${{ env.GO_TAGS }}
+          CGO_ENABLED: 1
+        run: |
+          cd hashicorp*
+          go clean -cache
+          make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          file pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          unzip pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ../${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+      - uses: actions/upload-artifact@v4.3.6
+        with:
+          name: ${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+          path: ${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+
+      - name: Create github release
+        uses: ncipollo/release-action@v1
+        with:
+          makeLatest: true
+          generateReleaseNotes: true
+          artifactErrorsFailBuild: true
+          artifacts: ${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
+
+permissions:
+  contents: read
+  id-token: write
