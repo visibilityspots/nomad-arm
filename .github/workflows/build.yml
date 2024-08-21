@@ -108,8 +108,6 @@ jobs:
           cd hashicorp*
           go clean -cache
           make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
-          file pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
-          unzip pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
           mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ../${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
       - uses: actions/upload-artifact@v4.3.6
         with:
