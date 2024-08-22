@@ -66,7 +66,7 @@ jobs:
         uses: robinraju/release-downloader@v1.11
         with:
           repository: 'hashicorp/nomad'
-          tag: ${{ needs.get-versions.outputs.nomad-version }}
+          tag: ${{ github.ref_name }}
           tarBall: true
           extract: true
 
