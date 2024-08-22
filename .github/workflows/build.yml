@@ -10,32 +10,37 @@ env:
   GO_TAGS: "release"
 
 jobs:
-
   get-versions:
     runs-on: ubuntu-latest
+
     outputs:
       go-version: ${{ steps.get-go-version.outputs.go-version }}
       nomad-version: ${{ steps.get-nomad-version.outputs.nomad-version }}
+
     steps:
-      - uses: robinraju/release-downloader@v1.11
+      - uses: actions/checkout@v4
+      - name: Download nomad release ${{ github.ref_name }}
+        uses: robinraju/release-downloader@v1.11
         with:
           repository: 'hashicorp/nomad'
-          tag: 'v1.8.3'
+          tag: ${{ github.ref_name }}
           tarBall: true
           extract: true
+
       - name: Determine Go version
         id: get-go-version
-        # We use .go-version as our source of truth for current Go
-        # version, because "goenv" can react to it automatically.
         run: |-
           cd hashicorp*
           echo "Building with Go $(cat .go-version)"
           echo "go-version=$(cat .go-version)" >> "$GITHUB_OUTPUT"
+
       - name: Setup go
         uses: actions/setup-go@v5.0.2
         with:
           go-version: ${{ steps.get-go-version.outputs.go-version }}
-      - name: get nomad version
+          cache: false
+
+      - name: Get nomad version from source code
         id: get-nomad-version
         run: |-
           cd hashicorp*
@@ -43,22 +48,25 @@ jobs:
           echo "nomad-version=$(make version)" >> "$GITHUB_OUTPUT"
 
   build-linux:
-    needs: get-versions
     runs-on: ubuntu-latest
+
+    needs: get-versions
+
     strategy:
       matrix:
         goos: [linux]
         goarch: ["arm"]
       fail-fast: true
 
-    name: Go ${{ needs.get-versions.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
+    name: Compiling Nomad ${{ needs.get-versions.outputs.nomad-version }} using Go ${{ needs.get-versions.outputs.go-version }} for ${{ matrix.goos }} ${{ matrix.goarch }}
 
     steps:
       - uses: actions/checkout@v4
-      - uses: robinraju/release-downloader@v1.11
+      - name: Download nomad release ${{ github.ref_name }}
+        uses: robinraju/release-downloader@v1.11
         with:
           repository: 'hashicorp/nomad'
-          tag: 'v1.8.3'
+          tag: ${{ needs.get-versions.outputs.nomad-version }}
           tarBall: true
           extract: true
 
@@ -66,6 +74,7 @@ jobs:
         uses: actions/setup-go@v5.0.2
         with:
           go-version: ${{ needs.get-versions.outputs.go-version }}
+          cache: false
 
       - name: Build dependencies
         run: |-
@@ -99,7 +108,7 @@ jobs:
             echo "CC=arm-linux-gnueabihf-gcc" >> "$GITHUB_ENV"
           fi
 
-      - name: Build
+      - name: Compile binary and package it
         env:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
@@ -114,7 +123,6 @@ jobs:
       - name: Create github release
         uses: ncipollo/release-action@v1.14.0
         with:
-          tag: ${{ github.ref_name }}
           makeLatest: true
           generateReleaseNotes: true
           artifactErrorsFailBuild: true
