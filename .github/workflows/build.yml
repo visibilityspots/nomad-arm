@@ -54,6 +54,7 @@ jobs:
     name: Go ${{ needs.get-versions.outputs.go-version }} ${{ matrix.goos }} ${{ matrix.goarch }} build
 
     steps:
+      - uses: actions/checkout@v4
       - uses: robinraju/release-downloader@v1.11
         with:
           repository: 'hashicorp/nomad'
@@ -109,13 +110,9 @@ jobs:
           go clean -cache
           make pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip
           mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ../${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
-      - uses: actions/upload-artifact@v4.3.6
-        with:
-          name: ${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
-          path: ${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
 
       - name: Create github release
-        uses: ncipollo/release-action@v1
+        uses: ncipollo/release-action@v1.14.0
         with:
           makeLatest: true
           generateReleaseNotes: true
