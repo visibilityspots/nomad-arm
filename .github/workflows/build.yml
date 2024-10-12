@@ -76,6 +76,11 @@ jobs:
           go-version: ${{ needs.get-versions.outputs.go-version }}
           cache: false
 
+      - name: Get GNUmakefile from nomad version 1.8.3
+        run: |-
+          cd hashicorp*
+          wget https://raw.githubusercontent.com/hashicorp/nomad/refs/tags/v1.8.3/GNUmakefile -O GNUmakefile
+
       - name: Build dependencies
         run: |-
           cd hashicorp*
