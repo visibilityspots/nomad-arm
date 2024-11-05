@@ -1,18 +1,22 @@
 ARG GOLANG_VERSION=1.23.2
-ARG DISTRO_VERSION=bookworm
-ARG UPSTREAM_RELEASE_TAG=v1.9.0
+ARG ALPINE_VERSION=3.20
+ARG UPSTREAM_RELEASE_TAG=v1.9.1
 
-FROM golang:${GOLANG_VERSION}-${DISTRO_VERSION} as gobuild
+FROM golang:${GOLANG_VERSION}-alpine${ALPINE_VERSION} as gobuild
 ARG GOLANG_VERSION
-ARG DISTRO_VERSION
+ARG ALPINE_VERSION
 ARG UPSTREAM_RELEASE_TAG
 
 WORKDIR /tmp
 
-RUN mkdir release && \
+RUN apk add --no-cache gcc build-base linux-headers curl tar && \
+    mkdir release && \
     curl -L "https://github.com/hashicorp/nomad/archive/refs/tags/${UPSTREAM_RELEASE_TAG}.tar.gz" | tar xvz --strip 1 -C ./release
 
 WORKDIR /tmp/release/
 
 RUN go build -ldflags="-X 'main.Version=$UPSTREAM_RELEASE_TAG' -X 'main.BuildTime=$(date +%B\ %Y)'" -o /usr/local/bin/nomad
 
+FROM scratch
+COPY --from=gobuild /usr/local/bin/nomad /usr/local/bin/nomad
+ENTRYPOINT ["/usr/local/bin/nomad"]
