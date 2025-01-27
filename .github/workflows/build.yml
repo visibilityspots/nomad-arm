@@ -35,7 +35,7 @@ jobs:
           echo "go-version=$(cat .go-version)" >> "$GITHUB_OUTPUT"
 
       - name: Setup go
-        uses: actions/setup-go@v5.2.0
+        uses: actions/setup-go@v5.3.0
         with:
           go-version: ${{ steps.get-go-version.outputs.go-version }}
           cache: false
@@ -71,7 +71,7 @@ jobs:
           extract: true
 
       - name: Setup go
-        uses: actions/setup-go@v5.2.0
+        uses: actions/setup-go@v5.3.0
         with:
           go-version: ${{ needs.get-versions.outputs.go-version }}
           cache: false
