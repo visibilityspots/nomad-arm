@@ -126,7 +126,7 @@ jobs:
           mv pkg/${{ matrix.goos }}_${{ matrix.goarch }}.zip ../${{ env.PKG_NAME }}_${{ needs.get-versions.outputs.nomad-version }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
 
       - name: Create github release
-        uses: ncipollo/release-action@v1.15.0
+        uses: ncipollo/release-action@v1.16.0
         with:
           makeLatest: true
           generateReleaseNotes: true
