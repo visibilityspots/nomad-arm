@@ -20,7 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download nomad release ${{ github.ref_name }}
-        uses: robinraju/release-downloader@v1.11
+        uses: robinraju/release-downloader@v1.12
         with:
           repository: 'hashicorp/nomad'
           tag: ${{ github.ref_name }}
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Download nomad release ${{ github.ref_name }}
-        uses: robinraju/release-downloader@v1.11
+        uses: robinraju/release-downloader@v1.12
         with:
           repository: 'hashicorp/nomad'
           tag: ${{ github.ref_name }}
