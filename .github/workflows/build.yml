@@ -87,7 +87,7 @@ jobs:
           make deps
 
       - name: Setup node and yarn
-        uses: actions/setup-node@v4.2.0
+        uses: actions/setup-node@v4.3.0
         with:
           node-version: "18"
           cache-dependency-path: "hashicorp*/ui/yarn.lock"
