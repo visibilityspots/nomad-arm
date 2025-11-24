@@ -18,7 +18,7 @@ jobs:
       nomad-version: ${{ steps.get-nomad-version.outputs.nomad-version }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download nomad release ${{ github.ref_name }}
         uses: robinraju/release-downloader@v1.12
         with:
@@ -61,7 +61,7 @@ jobs:
     name: Compiling Nomad ${{ needs.get-versions.outputs.nomad-version }} using Go ${{ needs.get-versions.outputs.go-version }} for ${{ matrix.goos }} ${{ matrix.goarch }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Download nomad release ${{ github.ref_name }}
         uses: robinraju/release-downloader@v1.12
         with:
